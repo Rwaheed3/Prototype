@@ -1,0 +1,49 @@
+import tkinter as tk
+import socket
+from tkinter import messagebox
+
+# ==========================================
+# CONFIGURATION
+# ==========================================
+TARGET_IP = "192.168.137.123" # <--- CHANGE THIS TO YOUR PI'S IP
+TARGET_PORT = 5555          # Must match the listener port on the Pi
+
+def send_bypass_command():
+    """Sends the exploit packet to the Raspberry Pi"""
+    try:
+        # Establish a TCP connection to the Pi
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(3) # Don't freeze if the Pi is offline
+            s.connect((TARGET_IP, TARGET_PORT))
+            s.sendall(b"ATTACK_BYPASS")
+            
+        messagebox.showinfo("Exploit Success", "Command Sent: Vehicle Sensor Bypassed.")
+    except Exception as e:
+        messagebox.showerror("Connection Error", f"Could not reach Pi at {TARGET_IP}\nError: {e}")
+
+# ==========================================
+# GUI SETUP
+# ==========================================
+root = tk.Tk()
+root.title("Vehicle Sensor Override")
+root.geometry("400x250")
+root.configure(bg="#1c1c1e")
+
+# Header
+tk.Label(root, text="REMOTE BYPASS TOOL", font=("Helvetica", 16, "bold"), 
+         bg="#1c1c1e", fg="#ff3b30").pack(pady=20)
+
+# Status info
+tk.Label(root, text=f"Target: {TARGET_IP}", font=("Helvetica", 10), 
+         bg="#1c1c1e", fg="#86868b").pack()
+
+# The Main Button
+bypass_btn = tk.Button(root, text="VEHICLE SENSOR OFF", 
+                       bg="#ff3b30", fg="white", 
+                       font=("Arial", 12, "bold"), 
+                       padx=20, pady=15, 
+                       activebackground="#ff453a",
+                       command=send_bypass_command)
+bypass_btn.pack(pady=30)
+
+root.mainloop()
