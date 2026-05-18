@@ -10,12 +10,25 @@ int Trig = A5;
 #define IN2 8
 #define IN3 9
 #define IN4 11
-#define carSpeed 150 
+
+// ==========================================
+// 🎛️ YOUR CONTROL PANEL - Tweak these!
+// ==========================================
+// ==========================================
+// 🎛️ YOUR CONTROL PANEL - Tweak these!
+// ==========================================
+#define carSpeed 255          // MAX POWER 
+#define triggerDistance 40    // How close to a wall before it hits the brakes (cm)
+#define reverseTime 1200      // How long it backs up when completely trapped (ms)
+#define turnTime 1000         // 🔥 INCREASED from 700 to 1000 to make the turn wider!
+// ==========================================
+// ==========================================
+
 int rightDistance = 0, leftDistance = 0, middleDistance = 0;
 
 bool engineStarted = false; 
 bool hacked = false; 
-bool sensorBypass = false; // 
+bool sensorBypass = false; 
 
 unsigned long lastSerialUpdate = 0;
 const int serialInterval = 100; 
@@ -42,7 +55,7 @@ void loop() {
       if (cmd == 'G') {
         engineStarted = true;
         hacked = false;
-        sensorBypass = false; // 
+        sensorBypass = false; 
         Serial.println("ENGINE STARTED - SENSORS ON");
       }
 
@@ -76,20 +89,19 @@ void loop() {
     // --- AUTONOMOUS DRIVING LOGIC ---
     myservo.write(90);  
     
-    
     if(sensorBypass) {
-        forward(); // this makes car keep going 
+        forward(); 
     } 
     else {
-        // Standard Safety Logic
-        if(middleDistance <= 40 && middleDistance > 0) {      
-          stop(500);                          
+        // If there is an object within our trigger distance...
+        if(middleDistance <= triggerDistance && middleDistance > 0) {      
+          stop(500);                                  
           myservo.write(10);          
           delay(1000);      
           rightDistance = Distance_test();
           delay(500);
           myservo.write(90);              
-          delay(1000);                                                                      
+          delay(1000);                                                                                          
           myservo.write(180);              
           delay(1000); 
           leftDistance = Distance_test();
@@ -97,26 +109,41 @@ void loop() {
           myservo.write(90);              
           delay(1000);
           
-          if((rightDistance <= 40) && (leftDistance <= 40)) {
-            back(carSpeed, 180);
+          // ESCAPE LOGIC
+          if((rightDistance <= triggerDistance) && (leftDistance <= triggerDistance)) {
+            // 1. DEAD END (Both sides blocked)
+            back(carSpeed, reverseTime); 
+            stop(200);            
+            left(carSpeed, turnTime); 
+            stop(200);
           }
-          else if(rightDistance > leftDistance) {
-            right(carSpeed, 360);
-          }
-          else if(rightDistance < leftDistance) {
-            left(carSpeed, 360);
+          // 🔥 THE FIX: Using ">=" means if both sides are 999 (open), it will default to turning right!
+          else if(rightDistance >= leftDistance) {
+            // 2. RIGHT IS CLEAR
+            back(carSpeed, 600); // Momentum bump to un-stick the tires
+            stop(200);
+            right(carSpeed, turnTime);
+            stop(200);
           }
           else {
-            forward();
+            // 3. LEFT IS CLEAR
+            back(carSpeed, 600); // Momentum bump to un-stick the tires
+            stop(200);
+            left(carSpeed, turnTime);
+            stop(200);
           }
         }  
         else {
+            // Path is clear! Keep driving.
             forward();
         } 
     }               
 }
 
-// ... (Rest of your functions: gradualStop, forward, back, left, right, stop, Distance_test remain exactly the same)
+// ==========================================
+// MOTOR CONTROL FUNCTIONS
+// ==========================================
+
 void gradualStop() {
   for (int i = carSpeed; i >= 0; i--) {
     analogWrite(ENA, i);
@@ -176,6 +203,9 @@ void stop(int delayTime) {
   delay(delayTime);
 } 
 
+// ==========================================
+// SENSOR FUNCTION
+// ==========================================
 int Distance_test() {
   digitalWrite(Trig, LOW);   
   delayMicroseconds(2);
@@ -184,5 +214,13 @@ int Distance_test() {
   digitalWrite(Trig, LOW);   
   float time = pulseIn(Echo, HIGH, 30000); 
   float Fdistance = time / 58;
-  return (int)Fdistance;
+  int dist = (int)Fdistance;
+  
+  // 🔥 THE FIX: If the path is perfectly clear, pulseIn times out and returns 0. 
+  // We change it to 999 so the car logic knows it is wide open!
+  if (dist == 0) {
+    return 999;
+  }
+  
+  return dist;
 }
