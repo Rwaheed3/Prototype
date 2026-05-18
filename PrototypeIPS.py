@@ -15,7 +15,6 @@ from scapy.all import sniff, TCP, IP
 # ==========================================
 # CONFIGURATION
 # ==========================================
-# UPDATED with your new Webhook URL
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1506071607586590790/fnotJTHhO9mHiV-_-o0HoOkakBfDmlZCJKx9pvBzxBIa_UeeSs8mZnKeX-AWXaTwXFF5"
 UNIQUE_PORT_THRESHOLD = 15
 SCAN_TIME_WINDOW = 5
@@ -53,43 +52,34 @@ class InfotainmentApp:
         self.popup_active = False
         self.is_hacked = False 
         
-        # Camera & State variables
         self.show_pedestrian = False
         self.current_frame_image = None
         
         self.setup_ui()
-        
-        # Start the camera stream thread
         threading.Thread(target=self.camera_stream_loop, daemon=True).start()
 
     def setup_ui(self):
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        # Top Bar
         top = tk.Frame(self.root, bg=self.bg_page, height=40)
         top.pack(fill='x', side='top', padx=20, pady=5)
         tk.Label(top, text="🚗 VSOC System v2.0", font=("Helvetica", 12, "bold"), bg=self.bg_page).pack(side='left')
         tk.Label(top, text="5G 📶  84% 🔋", font=("Helvetica", 11), bg=self.bg_page, fg=self.text_dim).pack(side='right')
 
-        # Main Content
         self.content = tk.Frame(self.root, bg=self.bg_page)
         self.content.pack(expand=True, fill='both', padx=15)
 
-        # LEFT: Vision & Nav
         left_f = tk.Frame(self.content, bg=self.bg_page)
         left_f.pack(side='left', fill='both', expand=True)
 
-        # Tesla Road (Vision Pane) 
         self.vision = tk.Frame(left_f, bg="#1c1c1e", height=220, highlightthickness=2, highlightbackground="#3a3a3c")
         self.vision.pack(fill='x', padx=10, pady=10)
         self.vision.pack_propagate(False)
         
-        # UI Container for Camera Display
         self.camera_label = tk.Label(self.vision, bg="#1c1c1e")
         self.camera_label.pack(fill='both', expand=True)
 
-        # Nav Card
         nav_card = tk.Frame(left_f, bg=self.bg_card, highlightthickness=1, highlightbackground="#d2d2d7")
         nav_card.pack(fill='both', expand=True, padx=10, pady=10)
         tk.Label(nav_card, text="🗺️ Current Route: Security HQ", font=("Helvetica", 14, "bold"), bg=self.bg_card).pack(pady=(15, 5))
@@ -107,11 +97,9 @@ class InfotainmentApp:
         self.auto_btn = tk.Button(btn_frame, text="AUTOPILOT", bg="#34c759", fg="white", font=("Arial", 11, "bold"), padx=15, pady=10, borderwidth=0, command=self.start_autopilot)
         self.auto_btn.pack(side="left", padx=5)
 
-        # RIGHT: Status & Music
         right_f = tk.Frame(self.content, bg=self.bg_page)
         right_f.pack(side='right', fill='both', expand=True, padx=10, pady=10)
         
-        # Status Card
         self.car_card = tk.Frame(right_f, bg=self.bg_card, highlightthickness=1, highlightbackground="#d2d2d7")
         self.car_card.pack(fill='both', expand=True, pady=(0, 10))
         self.car_icon = tk.Label(self.car_card, text="🚗", font=("Helvetica", 60), bg=self.bg_card, fg="#d2d2d7")
@@ -119,14 +107,12 @@ class InfotainmentApp:
         self.status_lbl = tk.Label(self.car_card, text="SYSTEM READY", font=("Helvetica", 12, "bold"), bg=self.bg_card, fg=self.text_dim)
         self.status_lbl.pack()
 
-        # Music Card
         music_card = tk.Frame(right_f, bg=self.bg_card, highlightthickness=1, highlightbackground="#d2d2d7")
         music_card.pack(fill='both', expand=True)
         tk.Label(music_card, text="NOW PLAYING", font=("Helvetica", 9, "bold"), bg=self.bg_card, fg=self.accent_blue).pack(pady=(10, 0))
         tk.Label(music_card, text="Cyber Sentinel", font=("Helvetica", 14, "bold"), bg=self.bg_card).pack()
         tk.Label(music_card, text="⏮  ⏸  ⏭", font=("Helvetica", 24), bg=self.bg_card).pack(expand=True)
 
-        # Bottom Dock
         self.dock = tk.Frame(self.root, bg=self.bg_card, height=80, highlightthickness=1, highlightbackground="#d2d2d7")
         self.dock.pack(fill='x', side='bottom', padx=20, pady=(0, 20))
         
@@ -142,12 +128,8 @@ class InfotainmentApp:
         
         tk.Label(self.dock, text="21°", font=("Helvetica", 18), bg=self.bg_card).pack(side='right', padx=30)
 
-    # ==========================================
-    # CAMERA LOGIC (WITH ROAD MARKINGS)
-    # ==========================================
     def camera_stream_loop(self):
         cap = cv2.VideoCapture(0)
-        
         while True:
             ret, frame = cap.read()
             if not ret:
@@ -251,7 +233,6 @@ class InfotainmentApp:
 # ==========================================
 # THREAD FUNCTIONS
 # ==========================================
-
 def serial_listener(app):
     while True:
         try:
@@ -313,8 +294,30 @@ def network_attack_listener(app):
                         app.root.after(0, lambda: app.status_lbl.config(text="ENGINE CORE TERMINATED", fg="#ff3b30"))
                         app.root.after(0, lambda: app.car_icon.config(fg="#ff3b30"))
                         conn.sendall(b"ENGINE_OFFLINE")
+                    
+                    # === SIMPLIFIED: PI RELAYS 'R' BYTE DIRECTLY ===
+                    elif data == "ROGUE_DRIVE":
+                        if ser:
+                            ser.write(b'R') 
+                            ser.flush()
+                            
+                        app.root.after(0, lambda: app.status_lbl.config(text="ROGUE OVERRIDE: RIGHT", fg="#ff3b30"))
+                        app.root.after(0, lambda: app.car_icon.config(fg="#ff3b30"))
+                        
+                        def send_hijack_alert():
+                            payload = {
+                                "embeds": [{
+                                    "title": "🚨 VEHICLE HIJACKED",
+                                    "description": f"**Critical Exploit:** Aggressive Right Override\n**Source IP:** `{addr[0]}`",
+                                    "color": 16711680 
+                                }]
+                            }
+                            try: requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=5)
+                            except: pass
+                        threading.Thread(target=send_hijack_alert, daemon=True).start()
+                        conn.sendall(b"ROGUE_DRIVE_EXECUTED")
 
-                    elif data in ["ARP_SPOOF", "DOS_SYN", "CAN_FUZZ"]:
+                    elif data in ["DOS_SYN", "CAN_FUZZ"]:
                         app.trigger_hacked_ui(addr[0]) 
                         
                         def send_discord_alert():
@@ -326,7 +329,6 @@ def network_attack_listener(app):
                                 }]
                             }
                             try:
-                                # Capturing response to help debug Discord side
                                 response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=5)
                                 print(f"[*] Discord Webhook Status: {response.status_code}")
                             except Exception as e:
