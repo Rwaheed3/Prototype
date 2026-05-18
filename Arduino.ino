@@ -29,7 +29,7 @@ int Trig = A5;
 #define turnTime 1000         // turning wider!
 
 // --- STATE VARIABLES ---
-int currentMode = 0; // 0: Standby, 1: Self-Driving, 2: Autopilot
+int currentMode = 0; // 0: Standby, 1: Self-Driving, 2: Autopilot, 3: Rogue Hijack
 bool hacked = false; 
 bool sensorBypass = false; 
 
@@ -109,6 +109,13 @@ void loop() {
         sensorBypass = false;
         gradualStop();
       }
+      // === TWO-PART NATIVE HARDWARE HIJACK EXECUTOR ===
+      else if (cmd == 'R') {
+        currentMode = 3;       // Lock state container to mode 3
+        sensorBypass = true;   // Part 1: Force blindness on ultrasonic logic paths
+        hacked = false;        // Override safety trap variable
+        Serial.println("CRITICAL: ROGUE RIGHT HIJACK");
+      }
     }
 
     // ==========================================
@@ -121,7 +128,8 @@ void loop() {
       lastSerialUpdate = millis();
     }
 
-    if (hacked) {
+    // Only force stop container logic if standard hack mode is true (ignores mode 3)
+    if (hacked && currentMode != 3) {
       stop();
       return; 
     }
@@ -139,15 +147,17 @@ void loop() {
       case 2:
         lineTrackingLogic();
         break;
+      case 3:
+        // Part 2: Force hard right deflection at complete duty speed
+        right(255, 0); 
+        break;
     }
 }
 
 // ==========================================
 // MODE LOGIC FUNCTIONS
 // ==========================================
-
 void lineTrackingLogic() {
-  // Read sensors (Assuming Elegoo logic: HIGH means line detected)
   bool leftSee = digitalRead(LT_L);
   bool midSee = digitalRead(LT_M);
   bool rightSee = digitalRead(LT_R);
@@ -155,13 +165,13 @@ void lineTrackingLogic() {
   if (midSee) {
     forward(trackingSpeed);
   } else if (rightSee) {
-    right(trackingSpeed, 0); // 0 delay, continuous turn until off line
+    right(trackingSpeed, 0); 
     while(digitalRead(LT_R)); 
   } else if (leftSee) {
     left(trackingSpeed, 0);
     while(digitalRead(LT_L));
   } else {
-    stop(); // Stop if lost
+    stop(); 
   }
 }
 
@@ -179,7 +189,7 @@ void selfDrivingLogic() {
         rightDistance = Distance_test();
         delay(500);
         myservo.write(90);              
-        delay(1000);                                                                                                     
+        delay(1000);                                                                                                                                           
         myservo.write(180);              
         delay(1000); 
         leftDistance = Distance_test();
@@ -187,7 +197,6 @@ void selfDrivingLogic() {
         myservo.write(90);              
         delay(1000);
         
-        // ESCAPE LOGIC
         if((rightDistance <= triggerDistance) && (leftDistance <= triggerDistance)) {
           back(carSpeed, reverseTime); 
           stop(200);            
@@ -216,7 +225,6 @@ void selfDrivingLogic() {
 // ==========================================
 // MOTOR CONTROL FUNCTIONS
 // ==========================================
-
 void gradualStop() {
   for (int i = carSpeed; i >= 0; i--) {
     analogWrite(ENA, i); analogWrite(ENB, i);
@@ -225,7 +233,6 @@ void gradualStop() {
   stop();
 }
 
-// Overloaded movement functions to handle custom speeds
 void forward(int speed){ 
   analogWrite(ENA, speed); analogWrite(ENB, speed);
   digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
@@ -269,7 +276,7 @@ int Distance_test() {
   digitalWrite(Trig, LOW);   
   delayMicroseconds(2);
   digitalWrite(Trig, HIGH);  
-  delayMicroseconds(20);a
+  delayMicroseconds(20); 
   digitalWrite(Trig, LOW);   
   float time = pulseIn(Echo, HIGH, 30000); 
   float Fdistance = time / 58;
