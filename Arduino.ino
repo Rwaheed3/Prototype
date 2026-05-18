@@ -11,16 +11,10 @@ int Trig = A5;
 #define IN3 9
 #define IN4 11
 
-// ==========================================
-// 🎛️ YOUR CONTROL PANEL - Tweak these!
-// ==========================================
-// ==========================================
-// 🎛️ YOUR CONTROL PANEL - Tweak these!
-// ==========================================
-#define carSpeed 255          // MAX POWER 
+#define carSpeed 255          // POWER 
 #define triggerDistance 40    // How close to a wall before it hits the brakes (cm)
-#define reverseTime 1200      // How long it backs up when completely trapped (ms)
-#define turnTime 1000         // 🔥 INCREASED from 700 to 1000 to make the turn wider!
+#define reverseTime 1200      // How long it backs up when completely trapped
+#define turnTime 1000         // turning wider!
 // ==========================================
 // ==========================================
 
@@ -117,7 +111,7 @@ void loop() {
             left(carSpeed, turnTime); 
             stop(200);
           }
-          // 🔥 THE FIX: Using ">=" means if both sides are 999 (open), it will default to turning right!
+          //  THE FIX: Using ">=" means if both sides are 999 (open), it will default to turning right!
           else if(rightDistance >= leftDistance) {
             // 2. RIGHT IS CLEAR
             back(carSpeed, 600); // Momentum bump to un-stick the tires
@@ -216,7 +210,7 @@ int Distance_test() {
   float Fdistance = time / 58;
   int dist = (int)Fdistance;
   
-  // 🔥 THE FIX: If the path is perfectly clear, pulseIn times out and returns 0. 
+  // If the path is perfectly clear, pulseIn times out and returns 0. 
   // We change it to 999 so the car logic knows it is wide open!
   if (dist == 0) {
     return 999;
